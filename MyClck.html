@@ -1,0 +1,58 @@
+# meta developer: @MeteorMods
+
+import logging
+import os
+import urllib
+
+from requests import post
+from telethon import events, functions
+from telethon.errors.rpcerrorlist import YouBlockedUserError
+
+from .. import loader, utils
+
+logger = logging.getLogger(__name__)
+
+
+@loader.tds
+class MyClck(loader.Module):
+    """"""
+
+    strings = {
+        "name": "MyClck",
+        "some_rong": (
+            "<b>✖ You're doing something wrong!\\write</b> <code>.help "
+            + "MyClck</code> <b>for more information.</b>"
+        ),
+        "result": "<b>Here you go, help yourself.</b>\n<a href='{}'>{}</a>",
+        "default": "How to use Google?",
+    }
+    
+
+    async def client_ready(self, client, db):
+        self.client = client
+    
+    async def clckcmd(self, message):
+        """- Usage: '.clck <url>'"""
+        chat = "@clck_robot"
+        reply = await message.get_reply_message()
+        async with message.client.conversation(chat) as conv:
+            if not reply:
+                text = utils.get_args_raw(message)
+            else:
+                text = await message.get_reply_message()
+            try:
+                response = conv.wait_event(
+                    events.NewMessage(incoming=True, from_users=6252233738)
+                )
+                mm = await message.client.send_message(chat, text)
+                response = await response
+                await mm.delete()
+            except YouBlockedUserError:
+                await message.edit("<code>✖ Please! Unblock @clck_robot</code>")
+                return
+            await message.edit(response.text.replace("🔗 Your link: ", ""))
+            await message.client(
+                functions.messages.DeleteHistoryRequest(
+                    peer="clck_robot", max_id=0, just_clear=False, revoke=True
+                )
+            )
